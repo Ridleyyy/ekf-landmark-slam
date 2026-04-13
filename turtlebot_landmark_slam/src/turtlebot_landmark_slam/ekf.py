@@ -8,9 +8,15 @@ class ExtendedKalmanFilter(object):
 
     def __init__(self) -> None:
         self._state_vector = np.array([[0.0], [0.0], [0.0]])
+        sigma_position = np.sqrt(10 ** (-3))
+        sigma_orientation = np.sqrt(10 ** (-3))
         self._state_covariance = np.array(
-            [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
-        ) * 10 ** (-3)
+            [
+                [sigma_position**2,               0.0,                  0.0],
+                [              0.0, sigma_position**2,                  0.0],
+                [              0.0,               0.0, sigma_orientation**2]
+            ]
+        )
 
         self._landmark_index = {}
 
