@@ -5,20 +5,34 @@ from copy import deepcopy
 
 
 class ExtendedKalmanFilter(object):
+    """EKF-SLAM filter that jointly estimates robot pose and landmark positions.
+
+    The state vector has shape (3 + 2*M, 1) where M is the number of observed
+    landmarks:  [x, y, yaw, lmk0_x, lmk0_y, lmk1_x, lmk1_y, ...]^T
+    """
 
     def __init__(self) -> None:
+        # State vector — grows as new landmarks are discovered (shape N x 1)
         self._state_vector = np.array([[0.0], [0.0], [0.0]])
+
         sigma_position = np.sqrt(10 ** (-3))
         sigma_orientation = np.sqrt(10 ** (-3))
+
+        # Initial 3x3 robot-pose covariance block (grows to N x N with landmarks)
         self._state_covariance = np.array(
             [
-                [sigma_position**2,               0.0,                  0.0],
-                [              0.0, sigma_position**2,                  0.0],
-                [              0.0,               0.0, sigma_orientation**2]
+                [sigma_position**2, 0.0, 0.0],
+                [0.0, sigma_position**2, 0.0],
+                [0.0, 0.0, sigma_orientation**2],
             ]
         )
 
+        # Maps landmark label -> starting row index in the state vector
         self._landmark_index = {}
+
+    # ------------------------------------------------------------------
+    # State accessors
+    # ------------------------------------------------------------------
 
     @property
     def x(self):
@@ -34,31 +48,37 @@ class ExtendedKalmanFilter(object):
 
     @property
     def pose(self):
+        """Robot pose as a (3,) array [x, y, yaw]."""
         return np.array([self.x, self.y, self.yaw], copy=True)
 
     @property
     def pose_covariance(self):
+        """3x3 covariance block for the robot pose."""
         return np.array(self._state_covariance[0:3, 0:3], copy=True)
 
     @property
     def state_mean(self):
+        """Full state vector (robot pose + landmark positions), shape (N, 1)."""
         return np.array(self._state_vector, copy=True)
 
     @property
     def state_covariance(self):
+        """Full N x N state covariance matrix."""
         return np.array(self._state_covariance, copy=True)
 
-    def predict(self, control_meaurement: ControlMeasurement):
-        motion_command = control_meaurement.motion_vector
-        motion_covariance = control_meaurement.covariance
-        pose = self._state_vector[0:3]
+    # ------------------------------------------------------------------
+    # EKF predict step
+    # ------------------------------------------------------------------
 
-        self._predict_call_count = getattr(self, "_predict_call_count", 0) + 1
-        if self._predict_call_count % 50 == 1:  # log every 50 calls (~1 Hz at 50 Hz odom)
-            print(f"[EKF predict #{self._predict_call_count}] "
-                  f"dx={motion_command[0,0]:.4f} dy={motion_command[1,0]:.4f} "
-                  f"dtheta={motion_command[2,0]:.4f}  "
-                  f"pose=({pose[0,0]:.3f}, {pose[1,0]:.3f}, {pose[2,0]:.3f})")
+    def predict(self, control: ControlMeasurement):
+        """Propagate the state forward using the motion model.
+
+        Only the robot-pose block [0:3] of the state and covariance is updated;
+        landmark estimates are unaffected by the motion model.
+        """
+        motion_command = control.motion_vector
+        motion_covariance = control.covariance
+        pose = self._state_vector[0:3]
 
         # TODO: Implement the EKF prediction step using the process model.
         #       prediction, x_pred = f(x, u) + noise
@@ -67,14 +87,18 @@ class ExtendedKalmanFilter(object):
 
         pass
 
+    # ------------------------------------------------------------------
+    # EKF update step
+    # ------------------------------------------------------------------
+
     def update(self, landmark_measurement: LandmarkMeasurement, is_new: bool):
+        """Correct the state estimate using a landmark measurement.
+
+        If `is_new` is True the landmark is appended to the state vector and
+        the covariance matrix is augmented before the standard EKF update.
+        """
         pose = self.pose
         state_covariance = self.state_covariance
-        state_mean = self.state_mean
-
-        print(f"[EKF update] label={landmark_measurement.label}  "
-              f"rel=({landmark_measurement.x:.3f}, {landmark_measurement.y:.3f})  "
-              f"{'NEW' if is_new else 'seen'}")
 
         # TODO: Implement the EKF update step using measurement helpers in utils.
         #       measurement, z = h(x, l) + noise

@@ -110,7 +110,6 @@ def Absolute2RelativeXY(robot_pose_abs, landmark_position_abs):
     """
 
     assert robot_pose_abs.shape == (3, 1)
-    assert landmark_position_abs.shape == (2, 1)
 
     x1 = robot_pose_abs[0][0]
     y1 = robot_pose_abs[1][0]
@@ -167,7 +166,6 @@ def Relative2AbsoluteXY(robot_pose_abs, landmark_position_rel):
     """
 
     assert robot_pose_abs.shape == (3, 1)
-    assert landmark_position_rel.shape == (2, 1)
 
     x1 = robot_pose_abs[0][0]
     y1 = robot_pose_abs[1][0]
@@ -213,11 +211,6 @@ def RelativeLandmarkPositions(landmark_position_abs, next_landmark_position_abs)
     :return : relative position of the next landmark with respect to the current landmark's position [dx, dy]
     """
 
-    assert landmark_position_abs.shape == (2, 1)
-    assert next_landmark_position_abs.shape == (2, 1)
-
-    # This function does not need any changes
-
     # label is in position [0], hence use positions [1] and [2]
     x1 = float(landmark_position_abs[1])
     y1 = float(landmark_position_abs[2])
@@ -238,8 +231,6 @@ def homogenous_transform(R: np.array, t: np.array):
 
     assert t.shape == (3, 1)
     assert R.shape == (3, 3)
-
-    # This function does not need any changes
 
     H = np.eye(4)
     H[:3, :3] = R
