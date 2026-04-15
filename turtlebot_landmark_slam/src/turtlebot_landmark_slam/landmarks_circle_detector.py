@@ -20,7 +20,7 @@ class CircleFit:
     # Mean Squared Error of the geometric fit (average squared distance from points to the circle), in meters^2.
     mse: float
     # If polar=True, center is (range, bearing) and covariance rows/cols 0-1 correspond to (range, bearing) rather than (x, y).
-    polar: bool = False
+    polar: bool
     # 3x3 covariance matrix for (cx, cy, radius) or (range, bearing, radius) if polar=True
     covariance: np.ndarray
 
