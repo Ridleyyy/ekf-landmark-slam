@@ -28,13 +28,13 @@ class CircleFit:
 def extract_circular_objects(
     scan_points,
     distance_threshold=0.1,
-    min_points=5,
-    max_radius=0.5,
-    min_radius=0.25,
-    max_mse=0.05,
-    max_aspect_ratio=3.0,
-    min_arc_angle=np.radians(60),
-    min_center_range=0.3,
+    min_points=3,
+    max_radius=0.1,
+    min_radius=0.03,
+    max_mse=0.005,
+    max_aspect_ratio=None,
+    min_arc_angle=None,
+    min_center_range=None,
     polar=False,
 ):
     """
@@ -258,11 +258,17 @@ if __name__ == "__main__":
     parser.add_argument(
         "--topic", default="/scan", help="Scan topic name (LaserScan or PointCloud)"
     )
+    parser.add_argument(
+        "--max-range",
+        type=float,
+        default=None,
+        help="Maximum range (meters) to include points. Points beyond this are filtered out before circle detection.",
+    )
     args = parser.parse_args()
 
     # Inspect topic type from the bag metadata
     reader = rosbag2_py.SequentialReader()
-    storage_options = rosbag2_py.StorageOptions(uri=args.bag_path, storage_id="sqlite3")
+    storage_options = rosbag2_py.StorageOptions(uri=args.bag_path, storage_id="mcap")
     converter_options = rosbag2_py.ConverterOptions("", "")
     reader.open(storage_options, converter_options)
 
@@ -330,19 +336,28 @@ if __name__ == "__main__":
     for scan_idx, scan_points in enumerate(scans):
         ax.clear()
         ax.set_aspect("equal")
-        ax.set_xlabel("X (meters)")
-        ax.set_ylabel("Y (meters)")
+        # Robotic convention: x forward (up), y left (left).
+        # Map: plot horizontal = robot Y (inverted), plot vertical = robot X.
+        ax.set_xlabel("Y (meters)")
+        ax.set_ylabel("X (meters)")
+        ax.invert_xaxis()
         ax.set_title(f"Scan {scan_idx + 1} / {len(scans)}")
         ax.grid(True, linestyle=":", alpha=0.6)
 
+        if args.max_range is not None:
+            ranges = np.linalg.norm(scan_points, axis=1)
+            scan_points = scan_points[ranges <= args.max_range]
+            ax.set_xlim(args.max_range, -args.max_range)
+            ax.set_ylim(-args.max_range, args.max_range)
+
         ax.plot(
-            scan_points[:, 0],
             scan_points[:, 1],
+            scan_points[:, 0],
             ".",
             color="lightgray",
             label="Raw scan",
             markersize=4,
-            zorder=1,
+            zorder=2,
         )
         ax.plot(
             0, 0, "^", color="black", markersize=10, label="Sensor origin", zorder=5
@@ -358,8 +373,8 @@ if __name__ == "__main__":
             cy = rng * np.sin(bearing)
 
             ax.plot(
-                c.points[:, 0],
                 c.points[:, 1],
+                c.points[:, 0],
                 ".",
                 color=color,
                 markersize=8,
@@ -368,10 +383,10 @@ if __name__ == "__main__":
             )
             ax.add_patch(
                 pltCircle(
-                    (cx, cy), c.radius, color=color, fill=False, linewidth=2, zorder=4
+                    (cy, cx), c.radius, color=color, fill=False, linewidth=2, zorder=4
                 )
             )
-            ax.plot(cx, cy, "+", color=color, markersize=10, zorder=5)
+            ax.plot(cy, cx, "+", color=color, markersize=10, zorder=5)
 
             print(
                 f"  Circle {i+1}: range={rng:.3f} m, bearing={np.degrees(bearing):.2f} deg, "
