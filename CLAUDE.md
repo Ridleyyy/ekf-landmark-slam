@@ -83,6 +83,8 @@ python3 scripts/evaluate_map.py --solution map_slam.txt --gt <ground_truth_file>
 
 The EKF predict/update logic lives in `ekf.py`. The `utils.py` helpers are designed specifically for use in the EKF equations:
 
+**Numpy mutable array warning:** The state vector and covariance matrix are numpy arrays passed by reference. Always use `np.copyto` (or explicit copies) when updating them to avoid unintended memory-sharing bugs.
+
 - **Predict step**: Use `Relative2AbsolutePose()` — returns new pose and Jacobians F (w.r.t. state) and W (w.r.t. control noise).
 - **Update step — new landmark**: Use `Relative2AbsoluteXY()` — returns landmark world position and Jacobians G1 (w.r.t. robot pose), G2 (w.r.t. measurement). Append to state and augment covariance.
 - **Update step — known landmark**: Use `Absolute2RelativeXY()` — returns predicted measurement and Jacobians H (w.r.t. full state), J (w.r.t. measurement noise). Standard EKF update equations apply.
