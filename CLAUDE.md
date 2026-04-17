@@ -14,16 +14,21 @@ colcon build
 colcon build --packages-select turtlebot_landmark_slam  # single package
 ```
 
-**Simulation (3 terminals):**
+**Simulation — single launch file (recommended):**
 ```bash
-# Terminal 1: Start Gazebo + simulation support nodes
-ros2 launch turtlebot_landmark_slam simulation.launch.py
+# Terminal 1: Starts Gazebo, EKF pipeline, RViz2, and trajectory recorder
+ros2 launch turtlebot_landmark_slam slam_sim.launch.py
 
-# Terminal 2: Start EKF pipeline
-ros2 launch turtlebot_landmark_slam ekf_pipeline.launch.py is_real:=false
+# Terminal 2: Teleoperate robot
+ros2 run turtlebot3_teleop teleop_keyboard
+```
+Ctrl+C on Terminal 1 shuts everything down and saves `slam_trajectory.png` in the current directory.
 
-# Terminal 3: Teleoperate robot
-export TURTLEBOT3_MODEL=burger && ros2 run turtlebot3_teleop teleop_keyboard
+**Simulation — manual (individual terminals):**
+```bash
+ros2 launch turtlebot_landmark_slam simulation.launch.py        # Terminal 1
+ros2 launch turtlebot_landmark_slam ekf_pipeline.launch.py is_real:=false  # Terminal 2
+ros2 run turtlebot3_teleop teleop_keyboard                      # Terminal 3
 ```
 
 **Real robot:**
@@ -31,10 +36,22 @@ export TURTLEBOT3_MODEL=burger && ros2 run turtlebot3_teleop teleop_keyboard
 ros2 launch turtlebot_landmark_slam ekf_pipeline.launch.py is_real:=true
 ```
 
+**RViz2 config** (`config/slam_viz.rviz`): loads estimated trajectory (`/ekf/odom`), ground truth (`/odom`), and landmark markers (`/ekf/map`) in a top-down 2D view.
+
+**Trajectory plotter** (`scripts/plot_trajectory.py`): subscribes to `/ekf/odom`, `/odom`, and `/ekf/map` while running; saves `slam_trajectory.png` on Ctrl+C. Can also be run standalone:
+```bash
+ros2 run turtlebot_landmark_slam plot_trajectory.py
+```
+
 **Save and evaluate map:**
 ```bash
 ros2 run turtlebot_landmark_slam map_writer.py
 python3 scripts/evaluate_map.py --solution map_slam.txt --gt <ground_truth_file>.txt
+```
+
+**Sourcing** (open a fresh terminal each session):
+```bash
+source /opt/ros/jazzy/setup.bash && source ~/ekf_ws/install/setup.bash
 ```
 
 ## Architecture
