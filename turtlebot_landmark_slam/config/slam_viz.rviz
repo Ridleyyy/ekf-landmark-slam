@@ -1,0 +1,104 @@
+Panels:
+  - Class: rviz_common/Displays
+    Help Height: 78
+    Name: Displays
+    Property Tree Widget:
+      Expanded:
+        - /Global Options1
+        - /EKF Pose1
+        - /EKF Pose1/Covariance1
+        - /Ground Truth Pose1
+        - /Landmark Estimates1
+      Splitter Ratio: 0.5
+    Tree Height: 600
+  - Class: rviz_common/Views
+    Name: Views
+
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Class: rviz_default_plugins/Grid
+      Name: Grid
+      Value: true
+      Cell Size: 1
+      Color: 160; 160; 164
+      Plane: XY
+      Plane Cell Count: 20
+
+    - Class: rviz_default_plugins/Odometry
+      Name: EKF Pose
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /ekf/odom
+      Value: true
+      Shape:
+        Alpha: 1
+        Axes Length: 0.3
+        Axes Radius: 0.03
+        Value: Axes
+      Keep: 200
+      Covariance:
+        Value: true
+        Orientation:
+          Alpha: 0.5
+          Color: 255; 255; 127
+          Color Style: Unique
+          Value: true
+        Position:
+          Alpha: 0.8
+          Color: 204; 51; 204
+          Value: true
+
+    - Class: rviz_default_plugins/Odometry
+      Name: Ground Truth Pose
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /odom
+      Value: true
+      Shape:
+        Alpha: 0.7
+        Axes Length: 0.2
+        Axes Radius: 0.02
+        Value: Axes
+      Keep: 200
+      Covariance:
+        Value: false
+
+    - Class: rviz_default_plugins/MarkerArray
+      Name: Landmark Estimates
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /ekf/map
+      Value: true
+
+  Enabled: true
+  Global Options:
+    Background Color: 48; 48; 48
+    Fixed Frame: odom
+    Frame Rate: 30
+  Name: root
+  Tools:
+    - Class: rviz_default_plugins/Interact
+    - Class: rviz_default_plugins/MoveCamera
+  Value: true
+  Views:
+    Current:
+      Class: rviz_default_plugins/TopDownOrtho
+      Name: Current View
+      Near Clip Distance: 0.009999999776482582
+      Scale: 100
+      Target Frame: <Fixed Frame>
+      Value: TopDownOrtho (rviz_default_plugins)
+      X: 0
+      Y: 0

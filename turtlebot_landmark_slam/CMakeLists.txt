@@ -16,10 +16,11 @@ install(PROGRAMS
   scripts/odom_to_control_republisher.py
   scripts/map_writer.py
   scripts/evaluate_map.py
+  scripts/plot_trajectory.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
-install(DIRECTORY launch
+install(DIRECTORY launch config
   DESTINATION share/${PROJECT_NAME}
 )
 
