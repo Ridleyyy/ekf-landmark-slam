@@ -17,6 +17,7 @@ install(PROGRAMS
   scripts/map_writer.py
   scripts/evaluate_map.py
   scripts/plot_trajectory.py
+  scripts/teleop_slow.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.optimize import least_squares
+import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle as pltCircle
 from dataclasses import dataclass
@@ -61,8 +62,8 @@ def extract_circular_objects(
     scan_points,
     distance_threshold=0.05,
     min_points=4,
-    max_radius=0.12,
-    min_radius=0.06,
+    max_radius=0.10,
+    min_radius=0.05,
     max_mse=1.0e-5,
     max_aspect_ratio=None,
     min_arc_angle=None,
@@ -274,6 +275,7 @@ def fit_circle_with_covariance(points, max_radius=1.5):
 if __name__ == "__main__":
     import argparse
     import rosbag2_py
+    matplotlib.use("Qt5Agg")
     from rclpy.serialization import deserialize_message
     from sensor_msgs.msg import LaserScan, PointCloud
 
@@ -326,10 +328,16 @@ if __name__ == "__main__":
         )
 
     scans = []
+    last_stamp_ns = None
+    interval_ns = int(2.0 * 1e9)  # 2 seconds in nanoseconds
+
     while reader.has_next():
-        topic, data, _ = reader.read_next()
+        topic, data, stamp_ns = reader.read_next()
         if topic != args.topic:
             continue
+        if last_stamp_ns is not None and (stamp_ns - last_stamp_ns) < interval_ns:
+            continue
+        last_stamp_ns = stamp_ns
         msg = deserialize_message(data, msg_class)
         if msg_class is LaserScan:
             pts = laserscan_to_points(msg)
@@ -338,7 +346,7 @@ if __name__ == "__main__":
         if len(pts) >= 5:
             scans.append(pts)
 
-    print(f"Loaded {len(scans)} scans from '{args.topic}'")
+    print(f"Loaded {len(scans)} scans from '{args.topic}' (sampled every 2s)")
     if not scans:
         print("No scans found. Check the topic name.")
         exit(1)
@@ -356,18 +364,15 @@ if __name__ == "__main__":
         "tab:gray",
     ]
 
-    fig, ax = plt.subplots(figsize=(10, 8))
-    fig.suptitle("Click or press any key to advance to the next scan", fontsize=10)
-
     for scan_idx, scan_points in enumerate(scans):
-        ax.clear()
+        plt.close("all")
+        fig, ax = plt.subplots(figsize=(10, 8))
+        fig.suptitle(f"Scan {scan_idx + 1} / {len(scans)} — close window to advance", fontsize=10)
+
         ax.set_aspect("equal")
-        # Robotic convention: x forward (up), y left (left).
-        # Map: plot horizontal = robot Y (inverted), plot vertical = robot X.
         ax.set_xlabel("Y (meters)")
         ax.set_ylabel("X (meters)")
         ax.invert_xaxis()
-        ax.set_title(f"Scan {scan_idx + 1} / {len(scans)}")
         ax.grid(True, linestyle=":", alpha=0.6)
 
         if args.max_range is not None:
@@ -376,18 +381,9 @@ if __name__ == "__main__":
             ax.set_xlim(args.max_range, -args.max_range)
             ax.set_ylim(-args.max_range, args.max_range)
 
-        ax.plot(
-            scan_points[:, 1],
-            scan_points[:, 0],
-            ".",
-            color="lightgray",
-            label="Raw scan",
-            markersize=4,
-            zorder=2,
-        )
-        ax.plot(
-            0, 0, "^", color="black", markersize=10, label="Sensor origin", zorder=5
-        )
+        ax.plot(scan_points[:, 1], scan_points[:, 0], ".",
+                color="lightgray", label="Raw scan", markersize=4, zorder=2)
+        ax.plot(0, 0, "^", color="black", markersize=10, label="Sensor origin", zorder=5)
 
         detected = extract_circular_objects(scan_points, polar=True)
         print(f"\nScan {scan_idx + 1}: {len(detected)} circle(s) detected")
@@ -398,31 +394,14 @@ if __name__ == "__main__":
             cx = rng * np.cos(bearing)
             cy = rng * np.sin(bearing)
 
-            ax.plot(
-                c.points[:, 1],
-                c.points[:, 0],
-                ".",
-                color=color,
-                markersize=8,
-                label=f"Circle {i+1}: r={c.radius:.2f}m",
-                zorder=3,
-            )
-            ax.add_patch(
-                pltCircle(
-                    (cy, cx), c.radius, color=color, fill=False, linewidth=2, zorder=4
-                )
-            )
+            ax.plot(c.points[:, 1], c.points[:, 0], ".", color=color, markersize=8,
+                    label=f"Circle {i+1}: r={c.radius:.2f}m", zorder=3)
+            ax.add_patch(pltCircle((cy, cx), c.radius, color=color, fill=False, linewidth=2, zorder=4))
             ax.plot(cy, cx, "+", color=color, markersize=10, zorder=5)
 
-            print(
-                f"  Circle {i+1}: range={rng:.3f} m, bearing={np.degrees(bearing):.2f} deg, "
-                f"radius={c.radius:.3f} m, mse={c.mse:.2e}"
-            )
+            print(f"  Circle {i+1}: range={rng:.3f} m, bearing={np.degrees(bearing):.2f} deg, "
+                  f"radius={c.radius:.3f} m, mse={c.mse:.2e}")
 
         ax.legend(loc="upper right")
         plt.tight_layout()
-        plt.draw()
-        plt.pause(0.001)
-        plt.waitforbuttonpress()
-
-    plt.show()
+        plt.show(block=True)
