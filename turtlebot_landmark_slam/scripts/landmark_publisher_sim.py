@@ -85,7 +85,7 @@ class LandmarkPublisherSim(Node):
 
     # ------------------------------------------------------------------
     # Timer: transform obstacles to robot frame and publish
-    # ------------------------------------------------------------------
+    # -----------------------label-------------------------------------------
 
     def _publish_landmarks(self) -> None:
         if not self._robot_pose_received:

@@ -24,13 +24,13 @@ from launch_ros.actions import Node
 # ------------------------------------------------------------------------------
 # VARIANT 1 — Baseline: balanced trust between odometry and landmarks (ACTIVE)
 # ------------------------------------------------------------------------------
-EKF_PARAMS = {
-    "is_real":              False,
-    "std_dev_linear_vel":   0.01,
-    "std_dev_angular_vel":  0.08726646259971647,   # 5 deg in radians
-    "std_dev_landmark_x":   0.10,
-    "std_dev_landmark_y":   0.10,
-}
+# EKF_PARAMS = {
+#     "is_real":              False,
+#     "std_dev_linear_vel":   0.01,
+#     "std_dev_angular_vel":  0.08726646259971647,   # 5 deg in radians
+#     "std_dev_landmark_x":   0.10,
+#     "std_dev_landmark_y":   0.10,
+# }
 
 # ------------------------------------------------------------------------------
 # VARIANT 2 — Trust landmarks more: high motion noise, tight landmark noise
@@ -50,13 +50,13 @@ EKF_PARAMS = {
 # Useful when the lidar has noisy detections (occlusion, reflections).
 # Uncomment below and comment out Variant 1 above to activate.
 # ------------------------------------------------------------------------------
-# EKF_PARAMS = {
-#     "is_real":              False,
-#     "std_dev_linear_vel":   0.005,
-#     "std_dev_angular_vel":  0.01745329251994330,   # 1 deg in radians
-#     "std_dev_landmark_x":   0.30,
-#     "std_dev_landmark_y":   0.30,
-# }
+EKF_PARAMS = {
+    "is_real":              False,
+    "std_dev_linear_vel":   0.005,
+    "std_dev_angular_vel":  0.01745329251994330,   # 1 deg in radians
+    "std_dev_landmark_x":   0.30,
+    "std_dev_landmark_y":   0.30,
+}
 
 
 def generate_launch_description():
@@ -65,7 +65,7 @@ def generate_launch_description():
     turtlebot3_gazebo_launch = os.path.join(
         get_package_share_directory("turtlebot3_gazebo"),
         "launch",
-        "turutlebot3_dqn_stage5_LEKF_CYL.launch.py",
+        "turtlebot3_dqn_stage2.launch.py",
     )
 
     rviz_config = os.path.join(pkg, "config", "slam_viz.rviz")
@@ -73,19 +73,12 @@ def generate_launch_description():
     return LaunchDescription(
         [
             DeclareLaunchArgument("is_real", default_value="false"),
-            SetEnvironmentVariable(name="TURTLEBOT3_MODEL", value="burger_cam"),
+            SetEnvironmentVariable(name="TURTLEBOT3_MODEL", value="burger"),
 
             # Gazebo simulation world
-            IncludeLaunchDescription(PythonLaunchDescriptionSource(turtlebot3_gazebo_launch)),
+            #IncludeLaunchDescription(PythonLaunchDescriptionSource(turtlebot3_gazebo_launch)),
 
             # Sim support nodes
-            Node(
-                package="turtlebot_landmark_slam",
-                executable="odom_to_control_republisher.py",
-                name="odom_to_control_republisher",
-                output="screen",
-                remappings=[("~/odom", "/odom")],
-            ),
             Node(
                 package="turtlebot_landmark_slam",
                 executable="landmark_publisher_sim.py",

@@ -27,6 +27,12 @@ from rclpy.node import Node
 from nav_msgs.msg import Odometry
 from visualization_msgs.msg import MarkerArray
 
+OBSTACLE_WORLD_POSITIONS: dict[int, tuple[float, float]] = {
+    1: (-1.0, -1.0),  # obstacle_1
+    2: (-1.0,  1.0),  # obstacle_2
+    3: ( 1.0, -1.0),  # obstacle_3
+    4: ( 1.0,  1.0),  # obstacle_4
+}
 
 class TrajectoryRecorder(Node):
 
@@ -85,6 +91,12 @@ class TrajectoryRecorder(Node):
             ly = [v[1] for v in self._landmarks.values()]
             ax.scatter(lx, ly, marker="^", s=120, color="red", zorder=5,
                        label="Estimated landmarks")
+            
+            # Overlay real landmark positions 
+            for i, (label, (real_x, real_y)) in enumerate(OBSTACLE_WORLD_POSITIONS.items()):
+                ax.scatter(real_x, real_y, marker="^", s=120, color="green", zorder=5,
+               label="Real landmarks" if i == 0 else "_nolegend_")
+                    
             for label, (x, y) in self._landmarks.items():
                 ax.annotate(str(label), (x, y), textcoords="offset points",
                             xytext=(6, 4), fontsize=8, color="red")
@@ -102,7 +114,6 @@ class TrajectoryRecorder(Node):
                 plt.show()
             except Exception:
                 pass
-
 
 def main():
     rclpy.init()

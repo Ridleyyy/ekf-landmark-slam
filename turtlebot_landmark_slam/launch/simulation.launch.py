@@ -11,12 +11,12 @@ def generate_launch_description():
     turtlebot3_gazebo_launch = os.path.join(
         get_package_share_directory("turtlebot3_gazebo"),
         "launch",
-        "turtlebot3_dqn_stage2.launch.py",
+        "turutlebot3_dqn_stage5_LEKF_CYL.launch.py",
     )
 
     return LaunchDescription(
         [
-            SetEnvironmentVariable(name="TURTLEBOT3_MODEL", value="burger"),
+            SetEnvironmentVariable(name="TURTLEBOT3_MODEL", value="burger_cam"),
             IncludeLaunchDescription(PythonLaunchDescriptionSource(turtlebot3_gazebo_launch)),
             Node(
                 package="turtlebot_landmark_slam",

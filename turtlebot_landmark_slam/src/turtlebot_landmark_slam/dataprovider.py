@@ -8,10 +8,9 @@ from turtlebot_landmark_slam.types import ControlMeasurement, LandmarkMeasuremen
 from landmarks_msg.msg import LandmarksMsg
 from geometry_msgs.msg import Twist
 
-#function which takes ControlMeasurement as an argument and has void (none) return type
 ControlHandler = Callable[[ControlMeasurement], None]
-#function which takes LandmarkMeasurement as an argument and has void (none) return type
 LandmarkHandler = Callable[[LandmarkMeasurement], None]
+
 
 class DataProviderBase(ABC):
 
@@ -30,6 +29,7 @@ class DataProviderBase(ABC):
         self._last_landmark_msg_time = None
         self._last_small_motion_log_time = None
 
+        # --- Motion noise std devs ---
         self.std_dev_linear_vel = float(
             self._node.declare_parameter("std_dev_linear_vel", 0.01).value
         )
@@ -37,19 +37,37 @@ class DataProviderBase(ABC):
             self._node.declare_parameter("std_dev_angular_vel", (5 * np.pi) / 180).value
         )
 
-        self._node.get_logger().info(
-            f"[DataProvider] std_dev_linear_vel: {self.std_dev_linear_vel}"
+        # --- Landmark measurement noise std devs ---
+        # These override the covariance published by the detector.
+        # Set to -1.0 (default) to use the detector's own covariance values.
+        self.std_dev_landmark_x = float(
+            self._node.declare_parameter("std_dev_landmark_x", -1.0).value
         )
-        self._node.get_logger().info(
-            f"[DataProvider] std_dev_angular_vel: {self.std_dev_angular_vel}"
+        self.std_dev_landmark_y = float(
+            self._node.declare_parameter("std_dev_landmark_y", -1.0).value
         )
 
-        # Subscribe to the cylinder node output
+        self._node.get_logger().info(
+            f"[DataProvider] std_dev_linear_vel:  {self.std_dev_linear_vel:.6f}"
+        )
+        self._node.get_logger().info(
+            f"[DataProvider] std_dev_angular_vel: {self.std_dev_angular_vel:.6f} rad"
+        )
+        if self.std_dev_landmark_x > 0 and self.std_dev_landmark_y > 0:
+            self._node.get_logger().info(
+                f"[DataProvider] std_dev_landmark_x:  {self.std_dev_landmark_x:.6f} m  (overriding detector)"
+            )
+            self._node.get_logger().info(
+                f"[DataProvider] std_dev_landmark_y:  {self.std_dev_landmark_y:.6f} m  (overriding detector)"
+            )
+        else:
+            self._node.get_logger().info(
+                "[DataProvider] std_dev_landmark_x/y: using detector-provided covariance"
+            )
+
         self._landmarks_subscription = self._node.create_subscription(
             LandmarksMsg, "~/landmarks", self.landmarkCallback, 1
         )
-
-        # Subscribe to control message. This should be a Twist
         self._control_subscription = self._node.create_subscription(
             Twist, "~/control", self.controlCallback, 1
         )
@@ -63,11 +81,10 @@ class DataProviderBase(ABC):
 
         dt = (now - self._last_control_msg_time).nanoseconds / 1e9
         self._last_control_msg_time = now
-        # read linear and angular velocities from the ROS message
-        linear_vel = twist.linear.x# velocity of the robot in its instantaneous frame. X is the forward direction
-        angular_vel = twist.angular.z   # angular velocity about the Z axis of the robot's instantaneous frame
 
-         # when there is no motion do not perform a prediction
+        linear_vel  = twist.linear.x
+        angular_vel = twist.angular.z
+
         if abs(linear_vel) < 0.009 and abs(angular_vel) < 0.09:
             should_log = (
                 self._last_small_motion_log_time is None
@@ -79,97 +96,85 @@ class DataProviderBase(ABC):
                 )
                 self._last_small_motion_log_time = now
             return
-        
+
         motion_command, motion_covariance = self._constructMotionWithCovariance(
             linear_vel, angular_vel, self.std_dev_linear_vel, self.std_dev_angular_vel, dt
         )
 
-        assert(motion_command.shape == (3,1))
-        assert(motion_covariance.shape == (3,3))
+        assert motion_command.shape    == (3, 1)
+        assert motion_covariance.shape == (3, 3)
 
-        dx = motion_command[0][0]
-        dy = motion_command[1][0]
+        dx     = motion_command[0][0]
+        dy     = motion_command[1][0]
         dtheta = motion_command[2][0]
 
         self._control_handler(ControlMeasurement(dx, dy, dtheta, motion_covariance))
 
     def landmarkCallback(self, landmarks: LandmarksMsg):
+        # Resolve whether to override the detector covariance
+        use_override = self.std_dev_landmark_x > 0 and self.std_dev_landmark_y > 0
+        lmk_std_x = self.std_dev_landmark_x if use_override else None
+        lmk_std_y = self.std_dev_landmark_y if use_override else None
+
         for landmark_msg in landmarks.landmarks:
-            landmark_measurement = LandmarkMeasurement.from_landmark_msg(landmark_msg)
+            landmark_measurement = LandmarkMeasurement.from_landmark_msg(
+                landmark_msg,
+                std_dev_landmark_x=lmk_std_x,
+                std_dev_landmark_y=lmk_std_y,
+            )
             self._landmark_handler(landmark_measurement)
 
     @abstractmethod
     def _constructMotionWithCovariance(
-        self, 
-        linear_vel: float, 
+        self,
+        linear_vel: float,
         angular_vel: float,
         std_dev_linear_vel: float,
         std_dev_angular_vel: float,
-        dt: float) -> Tuple[np.array, np.array]:
+        dt: float,
+    ) -> Tuple[np.array, np.array]:
         ...
+
 
 class OnlineDataProvider(DataProviderBase):
 
-    def __init__(
-        self,
-        node: Node,
-        control_handler: Callable,
-        landmark_handler: Callable,
-        **kwargs,
-    ) -> None:
+    def __init__(self, node, control_handler, landmark_handler, **kwargs):
         super().__init__(node, control_handler, landmark_handler, **kwargs)
 
-    
-    def _constructMotionWithCovariance(self, linear_vel: float, angular_vel: float, std_dev_linear_vel: float, std_dev_angular_vel: float, dt: float) -> Tuple[np.array, np.array]:
-        s_linear_vel_x = self.std_dev_linear_vel * linear_vel * dt #  5 cm / seg 
-        s_linear_vel_y = 0.000000001 # just a small value as there is no motion along y of the robot
-        s_angular_vel = self.std_dev_angular_vel * angular_vel * dt  # 2 deg / seg
+    def _constructMotionWithCovariance(self, linear_vel, angular_vel,
+                                        std_dev_linear_vel, std_dev_angular_vel, dt):
+        s_linear_vel_x = std_dev_linear_vel  * linear_vel  * dt
+        s_linear_vel_y = 0.000000001
+        s_angular_vel  = std_dev_angular_vel * angular_vel * dt
 
-        # compute the motion command [dx, dy, dtheta]. On the real robot we dont add any perterbations
-        # Note: this is an approximation but works as time steps are small          
-        dx = linear_vel * dt + s_linear_vel_x
-        dy = 0.0     # there is no motion along y of the robot
+        dx     = linear_vel  * dt + s_linear_vel_x
+        dy     = 0.0
         dtheta = angular_vel * dt + s_angular_vel
 
-        # Calculate motion command (u) and set it
-        motion_command = np.array([[dx], [dy], [dtheta]])
-
+        motion_command    = np.array([[dx], [dy], [dtheta]])
         motion_covariance = np.array([[(s_linear_vel_x)**2, 0.0, 0.0],
-                                           [0.0, (s_linear_vel_y)**2, 0.0],
-                                           [0.0, 0.0, (s_angular_vel)**2]])
-
+                                      [0.0, (s_linear_vel_y)**2, 0.0],
+                                      [0.0, 0.0, (s_angular_vel)**2]])
         return motion_command, motion_covariance
-        
+
 
 class SimulationDataProvider(DataProviderBase):
 
-    def __init__(
-        self,
-        node: Node,
-        control_handler: ControlHandler,
-        landmark_handler: LandmarkHandler,
-        **kwargs,
-    ) -> None:
+    def __init__(self, node, control_handler, landmark_handler, **kwargs):
         super().__init__(node, control_handler, landmark_handler, **kwargs)
 
-    def _constructMotionWithCovariance(self, linear_vel: float, angular_vel: float, std_dev_linear_vel: float, std_dev_angular_vel: float, dt: float) -> Tuple[np.array, np.array]:
-        # Simulation: we have set s_linear_vel and s_angular_vel to be proportional to the distance or angle moved
-        # In real robots this can be read directly from the odometry message if it is provided
-        s_linear_vel_x = self.std_dev_linear_vel * linear_vel * dt #  5 cm / seg 
-        s_linear_vel_y = 0.000000001 # just a small value as there is no motion along y of the robot
-        s_angular_vel = self.std_dev_angular_vel * angular_vel * dt  # 2 deg / seg
+    def _constructMotionWithCovariance(self, linear_vel, angular_vel,
+                                        std_dev_linear_vel, std_dev_angular_vel, dt):
+        s_linear_vel_x = std_dev_linear_vel  * linear_vel  * dt
+        s_linear_vel_y = 0.000000001
+        s_angular_vel  = std_dev_angular_vel * angular_vel * dt
 
-        # compute the motion command [dx, dy, dtheta] 
-        # Simulation: here we add the random gaussian noise proportional to the distance travelled and angle rotated.
-        # Note: this is an approximation but works as time steps are small          
-        dx = linear_vel * dt + s_linear_vel_x * np.random.standard_normal()
-        dy = 0.0     # there is no motion along y of the robot
-        dtheta = angular_vel * dt + s_angular_vel * np.random.standard_normal()
+        dx     = linear_vel  * dt + s_linear_vel_x * np.random.standard_normal()
+        dy     = 0.0
+        dtheta = angular_vel * dt + s_angular_vel  * np.random.standard_normal()
 
-        # Calculate motion command (u) and set it
-        motion_command = np.array([[dx], [dy], [dtheta]])
-
+        motion_command    = np.array([[dx], [dy], [dtheta]])
         motion_covariance = np.array([[(s_linear_vel_x)**2, 0.0, 0.0],
-                                           [0.0, (s_linear_vel_y)**2, 0.0],
-                                           [0.0, 0.0, (s_angular_vel)**2]])
+                                      [0.0, (s_linear_vel_y)**2, 0.0],
+                                      [0.0, 0.0, (s_angular_vel)**2]])
         return motion_command, motion_covariance
