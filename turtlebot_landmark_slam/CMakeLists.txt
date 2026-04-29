@@ -18,6 +18,7 @@ install(PROGRAMS
   scripts/evaluate_map.py
   scripts/plot_trajectory.py
   scripts/teleop_custom.py
+  scripts/nees_analyzer.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
