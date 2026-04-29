@@ -1,0 +1,84 @@
+<?xml version='1.0'?>
+<sdf version='1.8'>
+<model name='obstacles'>
+<pose>0 0 0 0 0 0</pose>
+<static>false</static>
+
+  <link name='obstacle_1'>
+    <pose>-1.0 -1.0 0.25 -1.5708 0 0</pose>
+    <collision name='obstacle_1_collision'>
+      <geometry>
+        <cylinder>
+          <radius>0.15</radius>
+          <length>0.5</length>
+        </cylinder>
+      </geometry>
+    </collision>
+    <visual name='obstacle_1_visual'>
+      <geometry>
+        <mesh>
+          <uri>model://turtlebot3_dqn_world/meshes/cylinder_obsticle_1.obj</uri>
+        </mesh>
+      </geometry>
+    </visual>
+  </link>
+
+  <link name='obstacle_2'>
+    <pose>-1.0 1.0 0.25 -1.5708 0 0</pose>
+    <collision name='obstacle_2_collision'>
+      <geometry>
+        <cylinder>
+          <radius>0.15</radius>
+          <length>0.5</length>
+        </cylinder>
+      </geometry>
+    </collision>
+    <visual name='obstacle_2_visual'>
+      <geometry>
+        <mesh>
+          <uri>model://turtlebot3_dqn_world/meshes/cylinder_obsticle_2.obj</uri>
+        </mesh>
+      </geometry>
+    </visual>
+  </link>
+
+  <link name='obstacle_3'>
+    <pose>1.0 -1.0 0.25 -1.5708 0 0</pose>
+    <collision name='obstacle_3_collision'>
+      <geometry>
+        <cylinder>
+          <radius>0.15</radius>
+          <length>0.5</length>
+        </cylinder>
+      </geometry>
+    </collision>
+    <visual name='obstacle_3_visual'>
+      <geometry>
+        <mesh>
+          <uri>model://turtlebot3_dqn_world/meshes/cylinder_obsticle_3.obj</uri>
+        </mesh>
+      </geometry>
+    </visual>
+  </link>
+
+  <link name='obstacle_4'>
+    <pose>1.0 1.0 0.25 -1.5708 0 0</pose>
+    <collision name='obstacle_4_collision'>
+      <geometry>
+        <cylinder>
+          <radius>0.15</radius>
+          <length>0.5</length>
+        </cylinder>
+      </geometry>
+    </collision>
+    <visual name='obstacle_4_visual'>
+      <geometry>
+        <mesh>
+          <uri>model://turtlebot3_dqn_world/meshes/cylinder_obsticle_4.obj</uri>
+        </mesh>
+      </geometry>
+    </visual>
+  </link>
+
+</model>
+</sdf>
