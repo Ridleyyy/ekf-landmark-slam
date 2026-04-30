@@ -16,6 +16,10 @@ class MapWriter(Node):
         self.get_logger().info("Gotten MarkerArray callback. Writing map to map")
         with open("map_slam.txt", "w") as map_file:
             for marker in data.markers:
+                # Pipeline publishes three markers per landmark across 3 namespaces.
+                # Only write the cylinder (ns="landmarks") to avoid duplicate lines.
+                if marker.ns and marker.ns != "landmarks":
+                    continue
                 line = "POINT2D %s %.3f %.3f \n" % (
                     marker.id,
                     marker.pose.position.x,

@@ -37,24 +37,27 @@ Visualization Manager:
       Value: true
       Shape:
         Alpha: 1
-        Axes Length: 0.3
-        Axes Radius: 0.03
-        Value: Axes
-      Keep: 200
+        Color: 0; 255; 0
+        Head Length: 0.07
+        Head Radius: 0.04
+        Shaft Length: 0.12
+        Shaft Radius: 0.02
+        Value: Arrow
+      Keep: 100
       Covariance:
         Value: true
         Orientation:
           Alpha: 0.5
           Color: 255; 255; 127
           Color Style: Unique
-          Value: true
+          Value: false
         Position:
-          Alpha: 0.8
+          Alpha: 0.6
           Color: 204; 51; 204
           Value: true
 
     - Class: rviz_default_plugins/Odometry
-      Name: Ground Truth Pose
+      Name: Wheel Odometry (/odom)
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -65,10 +68,13 @@ Visualization Manager:
       Value: true
       Shape:
         Alpha: 0.7
-        Axes Length: 0.2
-        Axes Radius: 0.02
-        Value: Axes
-      Keep: 200
+        Color: 100; 100; 255
+        Head Length: 0.05
+        Head Radius: 0.03
+        Shaft Length: 0.10
+        Shaft Radius: 0.015
+        Value: Arrow
+      Keep: 100
       Covariance:
         Value: false
 
@@ -81,6 +87,46 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /ekf/map
       Value: true
+
+    - Class: rviz_default_plugins/LaserScan
+      Name: LIDAR Scan
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Value: /scan
+      Value: true
+      Style: Points
+      Size (Pixels): 3
+      Color: 255; 255; 255
+      Color Transformer: FlatColor
+      Decay Time: 0
+      Position Transformer: XYZ
+
+    - Class: rviz_default_plugins/MarkerArray
+      Name: Detected Circles (raw LIDAR)
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /landmark_publisher_real/detected_circles
+      Value: true
+
+    - Class: rviz_default_plugins/Image
+      Name: Perception Debug
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /landmark_publisher_real/debug_image
+      Value: true
+      Max Value: 1
+      Median window: 5
+      Min Value: 0
+      Normalize Range: true
 
   Enabled: true
   Global Options:

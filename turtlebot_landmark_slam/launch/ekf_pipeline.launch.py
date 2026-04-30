@@ -14,13 +14,22 @@ def generate_launch_description():
             DeclareLaunchArgument("is_real", default_value="false"),
             Node(
                 package="turtlebot_landmark_slam",
+                executable="odom_to_control_republisher.py",
+                name="odom_to_control_republisher",
+                output="screen",
+                remappings=[("~/odom", "/odom")],
+                condition=IfCondition(is_real),
+            ),
+            Node(
+                package="turtlebot_landmark_slam",
                 executable="ekf_pipeline_node.py",
                 name="ekf",
                 output="screen",
                 parameters=[{"is_real": ParameterValue(is_real, value_type=bool)}],
                 remappings=[
                     ("~/landmarks", "/landmarks"),
-                    ("~/control", "/cmd_vel"),
+                    ("~/control",   "/odom_to_control_republisher/control"),
+                    ("~/gt_odom",   "/odom"),
                 ],
                 condition=IfCondition(is_real),
             ),

@@ -129,12 +129,16 @@ class ExtendedKalmanFilter(object):
         P_rr = self._state_covariance[0:3, 0:3]
         self._state_covariance[0:3, 0:3] = F @ P_rr @ F.T + W @ motion_covariance @ W.T
 
-        # Update robot-landmark cross-covariance blocks
+        # Update robot-landmark cross-covariance blocks.
+        # Bug fix: previously P_rl was a numpy VIEW of the slice, and the
+        # first assignment overwrote the underlying memory before the second
+        # line read it again — multiplying F twice and breaking symmetry.
+        # Compute the new value once, then write both blocks.
         n = self._state_covariance.shape[0]
         if n > 3:
-            P_rl = self._state_covariance[0:3, 3:]
-            self._state_covariance[0:3, 3:] = F @ P_rl
-            self._state_covariance[3:, 0:3] = (F @ P_rl).T
+            new_P_rl = F @ self._state_covariance[0:3, 3:]
+            self._state_covariance[0:3, 3:] = new_P_rl
+            self._state_covariance[3:, 0:3] = new_P_rl.T
 
     # ------------------------------------------------------------------
     # EKF update step
