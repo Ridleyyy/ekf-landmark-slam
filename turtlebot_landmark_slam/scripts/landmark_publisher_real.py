@@ -217,11 +217,15 @@ class LandmarkPublisherReal(Node):
 
         tag_list = self._aruco_centroids(img_bgr)  # [(tag_id, u, v), ...]
 
-        # Build candidate (circle, tag) matches within pixel threshold
+        # Build candidate (circle, tag) matches within pixel threshold.
+        # Horizontal distance only: the projected LIDAR centre's vertical (v)
+        # position depends on where the LIDAR plane meets the image, while the
+        # tag could be mounted anywhere on the cylinder's height. Only the
+        # column (u) tells us if they're the same cylinder.
         candidates = []  # [(distance, circle_idx, tag_idx), ...]
-        for ci, (_, (pu, pv)) in enumerate(projections):
-            for ti, (_, tu, tv) in enumerate(tag_list):
-                d = np.hypot(pu - tu, pv - tv)
+        for ci, (_, (pu, _pv)) in enumerate(projections):
+            for ti, (_, tu, _tv) in enumerate(tag_list):
+                d = abs(pu - tu)
                 if d < self._aruco_px_thresh:
                     candidates.append((d, ci, ti))
 
@@ -262,14 +266,14 @@ class LandmarkPublisherReal(Node):
 
         self._publish_debug(img_bgr, projections, tag_list, matched_pairs)
 
-        # Per-cycle diagnostic: counts and unmatched circle distances to nearest tag
+        # Per-cycle diagnostic: horizontal-pixel distance from each unmatched
+        # circle to the nearest tag (matching same metric used above).
         unmatched_info = []
         if tag_list and projections:
-            for ci, (_, (pu, pv)) in enumerate(projections):
+            for ci, (_, (pu, _pv)) in enumerate(projections):
                 if ci in used_circles:
                     continue
-                # Closest tag distance for this unmatched circle
-                d_min = min(np.hypot(pu - tu, pv - tv) for _, tu, tv in tag_list)
+                d_min = min(abs(pu - tu) for _, tu, _tv in tag_list)
                 unmatched_info.append(f"{d_min:.0f}px")
         self.get_logger().info(
             f"projected={len(projections)} tags={len(tag_list)} "
