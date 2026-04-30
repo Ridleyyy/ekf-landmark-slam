@@ -32,6 +32,7 @@ def generate_launch_description():
                 executable="odom_to_control_republisher.py",
                 name="odom_to_control_republisher",
                 output="screen",
+                parameters=[{"use_sim_time": True}],
                 remappings=[("~/odom", "/odom")],
             ),
             Node(
@@ -39,7 +40,11 @@ def generate_launch_description():
                 executable="landmark_publisher_sim.py",
                 name="landmark_publisher_sim",
                 output="screen",
-                parameters=[{"std_dev_landmark_x": 0.01, "std_dev_landmark_y": 0.01}],
+                parameters=[{
+                    "use_sim_time": True,
+                    "std_dev_landmark_x": 0.01,
+                    "std_dev_landmark_y": 0.01,
+                }],
                 remappings=[
                     ("~/odom", "/odom"),
                     ("~/landmarks", "/landmarks"),
@@ -52,7 +57,7 @@ def generate_launch_description():
                 executable="ekf_pipeline_node.py",
                 name="ekf",
                 output="screen",
-                parameters=[{"is_real": False}],
+                parameters=[{"is_real": False, "use_sim_time": True}],
                 remappings=[
                     ("~/landmarks", "/landmarks"),
                     ("~/gt_odom", "/odom"),
@@ -67,6 +72,7 @@ def generate_launch_description():
                 name="rviz2",
                 arguments=["-d", rviz_config],
                 output="screen",
+                parameters=[{"use_sim_time": True}],
             ),
 
             # Trajectory plotter (Ctrl+C to save plot)
@@ -75,6 +81,7 @@ def generate_launch_description():
                 executable="plot_trajectory.py",
                 name="trajectory_recorder",
                 output="screen",
+                parameters=[{"use_sim_time": True}],
             ),
 
             # Teleop in its own terminal window

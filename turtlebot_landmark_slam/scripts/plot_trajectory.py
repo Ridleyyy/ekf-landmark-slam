@@ -24,9 +24,11 @@ from rclpy.node import Node
 from nav_msgs.msg import Odometry
 from visualization_msgs.msg import MarkerArray
 
-# Save to home directory so the path is always valid regardless of
-# which directory ros2 launch was run from.
-_DEFAULT_OUT_DIR = os.path.expanduser("~")
+# Resolve the workspace symlink to find the sandbox directory at runtime.
+# ~/ekf_ws/src/turtlebot_landmark_slam is a symlink → .../sandbox/turtlebot_landmark_slam
+_ws_src_link = os.path.join(os.path.expanduser("~"), "ekf_ws", "src", "turtlebot_landmark_slam")
+_sandbox_dir = os.path.dirname(os.path.realpath(_ws_src_link))
+_DEFAULT_OUT_DIR = os.path.join(_sandbox_dir, "sim_outputs")
 
 
 class TrajectoryRecorder(Node):
@@ -97,6 +99,7 @@ class TrajectoryRecorder(Node):
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             output_file = os.path.join(_DEFAULT_OUT_DIR, f"slam_trajectory_{timestamp}.png")
 
+        os.makedirs(os.path.dirname(output_file), exist_ok=True)
         plt.savefig(output_file, dpi=150, bbox_inches="tight")
         plt.close(fig)
         self.get_logger().info(f"Saved plot to {output_file}")

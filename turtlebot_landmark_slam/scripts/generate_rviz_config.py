@@ -1,3 +1,48 @@
+#!/usr/bin/env python3
+"""
+Generate config/slam_viz.rviz from the parameters below.
+
+Usage:
+    python3 scripts/generate_rviz_config.py
+
+Edit the parameters in the "User-configurable" block, then re-run to
+regenerate the RViz config. Rebuild the package afterwards:
+    colcon build --packages-select turtlebot_landmark_slam
+"""
+
+from pathlib import Path
+
+# ── User-configurable parameters ──────────────────────────────────────────────
+
+BACKGROUND_COLOR    = "48; 48; 48"       # dark grey
+GRID_COLOR          = "160; 160; 164"
+GRID_CELL_SIZE      = 1
+GRID_COUNT          = 20
+
+# EKF estimated pose trail (blue axes)
+EKF_AXES_KEEP       = 5                  # number of recent poses to display
+EKF_AXES_LENGTH     = 0.3
+EKF_AXES_RADIUS     = 0.03
+EKF_AXES_ALPHA      = 1.0
+EKF_COV_COLOR       = "204; 51; 204"     # purple position covariance ellipse
+EKF_COV_ALPHA       = 0.8
+EKF_COV_ORI_COLOR   = "255; 255; 127"    # yellow orientation covariance
+
+# Ground truth pose trail (green axes)
+GT_AXES_KEEP        = 5
+GT_AXES_LENGTH      = 0.2
+GT_AXES_RADIUS      = 0.02
+GT_AXES_ALPHA       = 0.7
+
+# LiDAR scan points
+LIDAR_COLOR         = "0; 255; 0"        # green
+LIDAR_POINT_SIZE    = 0.03               # metres
+
+# ──────────────────────────────────────────────────────────────────────────────
+
+CONFIG_PATH = Path(__file__).resolve().parent.parent / "config" / "slam_viz.rviz"
+
+YAML = f"""\
 Panels:
   - Class: rviz_common/Displays
     Help Height: 78
@@ -20,10 +65,10 @@ Visualization Manager:
     - Class: rviz_default_plugins/Grid
       Name: Grid
       Value: true
-      Cell Size: 1
-      Color: 160; 160; 164
+      Cell Size: {GRID_CELL_SIZE}
+      Color: {GRID_COLOR}
       Plane: XY
-      Plane Cell Count: 20
+      Plane Cell Count: {GRID_COUNT}
 
     - Class: rviz_default_plugins/Odometry
       Name: EKF Pose
@@ -36,21 +81,21 @@ Visualization Manager:
         Value: /ekf/odom
       Value: true
       Shape:
-        Alpha: 1.0
-        Axes Length: 0.3
-        Axes Radius: 0.03
+        Alpha: {EKF_AXES_ALPHA}
+        Axes Length: {EKF_AXES_LENGTH}
+        Axes Radius: {EKF_AXES_RADIUS}
         Value: Axes
-      Keep: 5
+      Keep: {EKF_AXES_KEEP}
       Covariance:
         Value: true
         Orientation:
           Alpha: 0.5
-          Color: 255; 255; 127
+          Color: {EKF_COV_ORI_COLOR}
           Color Style: Unique
           Value: true
         Position:
-          Alpha: 0.8
-          Color: 204; 51; 204
+          Alpha: {EKF_COV_ALPHA}
+          Color: {EKF_COV_COLOR}
           Value: true
 
     - Class: rviz_default_plugins/Odometry
@@ -64,11 +109,11 @@ Visualization Manager:
         Value: /odom
       Value: true
       Shape:
-        Alpha: 0.7
-        Axes Length: 0.2
-        Axes Radius: 0.02
+        Alpha: {GT_AXES_ALPHA}
+        Axes Length: {GT_AXES_LENGTH}
+        Axes Radius: {GT_AXES_RADIUS}
         Value: Axes
-      Keep: 5
+      Keep: {GT_AXES_KEEP}
       Covariance:
         Value: false
 
@@ -104,9 +149,9 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /scan
       Value: true
-      Size (m): 0.03
+      Size (m): {LIDAR_POINT_SIZE}
       Color Transformer: FlatColor
-      Color: 0; 255; 0
+      Color: {LIDAR_COLOR}
 
     - Class: rviz_default_plugins/Image
       Name: Camera
@@ -120,7 +165,7 @@ Visualization Manager:
 
   Enabled: true
   Global Options:
-    Background Color: 48; 48; 48
+    Background Color: {BACKGROUND_COLOR}
     Fixed Frame: odom
     Frame Rate: 30
   Name: root
@@ -138,3 +183,7 @@ Visualization Manager:
       Value: TopDownOrtho (rviz_default_plugins)
       X: 0
       Y: 0
+"""
+
+CONFIG_PATH.write_text(YAML)
+print(f"Written to {CONFIG_PATH}")
