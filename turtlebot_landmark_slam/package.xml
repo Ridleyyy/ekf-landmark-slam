@@ -33,10 +33,13 @@
   <depend>rclpy</depend>
   <depend>geometry_msgs</depend>
   <depend>nav_msgs</depend>
+  <depend>sensor_msgs</depend>
   <depend>visualization_msgs</depend>
   <depend>gazebo_msgs</depend>
   <depend>landmarks_msg</depend>
   <depend>turtlebot3_gazebo</depend>
+  <depend>cv_bridge</depend>
+  <depend>message_filters</depend>
 
   <!-- The *depend tags are used to specify dependencies -->
   <!-- Dependencies can be catkin packages or system dependencies -->

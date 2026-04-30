@@ -26,6 +26,16 @@ def generate_launch_description():
             ),
             Node(
                 package="turtlebot_landmark_slam",
+                executable="landmark_publisher_real.py",
+                name="landmark_publisher_real",
+                output="screen",
+                remappings=[
+                    ("~/landmarks", "/landmarks"),
+                ],
+                condition=IfCondition(is_real),
+            ),
+            Node(
+                package="turtlebot_landmark_slam",
                 executable="ekf_pipeline_node.py",
                 name="ekf",
                 output="screen",

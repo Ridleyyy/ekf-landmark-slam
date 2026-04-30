@@ -12,6 +12,7 @@ ament_python_install_package(${PROJECT_NAME} PACKAGE_DIR src/${PROJECT_NAME})
 
 install(PROGRAMS
   scripts/ekf_pipeline_node.py
+  scripts/landmark_publisher_real.py
   scripts/landmark_publisher_sim.py
   scripts/odom_to_control_republisher.py
   scripts/map_writer.py
