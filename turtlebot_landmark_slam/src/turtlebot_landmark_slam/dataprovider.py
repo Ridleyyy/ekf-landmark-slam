@@ -143,13 +143,20 @@ class OnlineDataProvider(DataProviderBase):
 
     def _constructMotionWithCovariance(self, linear_vel, angular_vel,
                                         std_dev_linear_vel, std_dev_angular_vel, dt):
+        # On the real robot the wheel-encoder noise is already embedded in the
+        # /odom velocity. The motion command should be the unmodified
+        # commanded motion; uncertainty lives in motion_covariance only.
+        # Previously this method added s_linear_vel_x and s_angular_vel as
+        # CONSTANT biases to dx/dtheta — that compounded a systematic heading
+        # drift each predict step, which the EKF would later correct for in
+        # large jumps when a landmark was observed.
         s_linear_vel_x = std_dev_linear_vel  * linear_vel  * dt
         s_linear_vel_y = 0.000000001
         s_angular_vel  = std_dev_angular_vel * angular_vel * dt
 
-        dx     = linear_vel  * dt + s_linear_vel_x
+        dx     = linear_vel  * dt
         dy     = 0.0
-        dtheta = angular_vel * dt + s_angular_vel
+        dtheta = angular_vel * dt
 
         motion_command    = np.array([[dx], [dy], [dtheta]])
         motion_covariance = np.array([[(s_linear_vel_x)**2, 0.0, 0.0],

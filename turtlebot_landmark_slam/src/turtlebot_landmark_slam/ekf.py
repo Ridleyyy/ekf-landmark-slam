@@ -249,6 +249,8 @@ class ExtendedKalmanFilter(object):
             K = state_covariance @ H_full.T @ np.linalg.inv(self.regularise_matrix(S))
 
             self._state_vector += K @ innovation
+            # Keep yaw in [-pi, pi] so subsequent predict/update math stays sane
+            self._state_vector[2, 0] = utils.pi2pi(self._state_vector[2, 0])
             self._state_covariance = (np.eye(N) - K @ H_full) @ state_covariance
 
         else:
@@ -278,4 +280,6 @@ class ExtendedKalmanFilter(object):
             K = state_covariance @ H_full.T @ np.linalg.inv(self.regularise_matrix(S))
 
             self._state_vector += K @ innovation
+            # Keep yaw in [-pi, pi] so subsequent predict/update math stays sane
+            self._state_vector[2, 0] = utils.pi2pi(self._state_vector[2, 0])
             self._state_covariance = (np.eye(N) - K @ H_full) @ state_covariance

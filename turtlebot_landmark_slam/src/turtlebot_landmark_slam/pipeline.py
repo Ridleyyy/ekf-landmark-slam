@@ -74,9 +74,12 @@ class Pipeline(object):
         with self._lock:
             self._last_odom_time = self._node.get_clock().now().to_msg()
             self._ekf.predict(control_measurement)
+            pose = self._ekf.pose
             trace_xy = float(np.trace(self._ekf.pose_covariance[0:2, 0:2]))
             self._node.get_logger().info(
-                f"[PREDICT] pose_cov_trace_xy = {trace_xy:.5f} m^2", throttle_duration_sec=1.0
+                f"[PREDICT] pose=({float(pose[0,0]):+.3f}, {float(pose[1,0]):+.3f}, "
+                f"{math.degrees(float(pose[2,0])):+.1f} deg) trace_xy={trace_xy:.5f} m^2",
+                throttle_duration_sec=1.0,
             )
 
     def landmarkHandler(self, landmark_measurement: LandmarkMeasurement):
@@ -111,12 +114,18 @@ class Pipeline(object):
 
             if is_new:
                 self._seen_landmarks.add(landmark_measurement.label)
+            pose_before = self._ekf.pose
             trace_before = float(np.trace(self._ekf.pose_covariance[0:2, 0:2]))
             self._ekf.update(landmark_measurement, is_new)
+            pose_after = self._ekf.pose
             trace_after = float(np.trace(self._ekf.pose_covariance[0:2, 0:2]))
             self._node.get_logger().info(
                 f"[UPDATE  label={landmark_measurement.label}] "
-                f"pose_cov_trace_xy: {trace_before:.5f} -> {trace_after:.5f} m^2"
+                f"pose: ({float(pose_before[0,0]):+.3f}, {float(pose_before[1,0]):+.3f}, "
+                f"{math.degrees(float(pose_before[2,0])):+.1f} deg) -> "
+                f"({float(pose_after[0,0]):+.3f}, {float(pose_after[1,0]):+.3f}, "
+                f"{math.degrees(float(pose_after[2,0])):+.1f} deg) "
+                f"| trace_xy: {trace_before:.5f} -> {trace_after:.5f} m^2"
             )
 
     # ------------------------------------------------------------------
